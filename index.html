@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Mercado Pro 2026</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        :root {
+            --primary: #1f2937;
+            --accent: #b0fbff;
+            --bg: #6598fe;
+            --card-bg: #ffffff;
+            --text-color: #111827;
+            --border-radius: 12px;
+            --shadow-light: rgba(0,0,0,0.05);
+            --shadow-hover: rgba(0,0,0,0.15);
+        }
+
+        body {
+            background-color: var(--bg);
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            padding-bottom: 120px;
+        }
+
+        .sidebar {
+            background-color: var(--primary);
+            min-height: 100vh;
+            padding-top: 20px;
+            color: #94b4f3;
+        }
+
+        .sidebar a {
+            display: block;
+            padding: 10px 20px;
+            color: #94b4f3;
+            font-weight: 500;
+            text-decoration: none;
+            margin-bottom: 5px;
+            border-radius: var(--border-radius);
+            transition: all 0.2s;
+        }
+
+        .sidebar a:hover, .sidebar a.active {
+            background-color: var(--accent);
+            color: var(--primary);
+        }
+
+        .card-produto {
+            background-color: var(--card-bg);
+            border: none;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px var(--shadow-light);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card-produto:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px var(--shadow-hover);
+        }
+
+        .card-img-top {
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .btn-buy {
+            background: var(--accent);
+            color: var(--primary);
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-buy:hover {
+            background: #87dfff;
+            color: #4b4b7f;
+            transform: translateY(-2px);
+        }
+
+        .produto-nome, .produto-desc {
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: top;
+        }
+
+        .ver-mais {
+            color: var(--accent);
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.9rem;
+        }
+
+        .fixed-bottom {
+            box-shadow: 0 -4px 12px var(--shadow-light);
+            border-top-left-radius: var(--border-radius);
+            border-top-right-radius: var(--border-radius);
+        }
+
+        @media (max-width: 768px) {
+            .card-img-top { height: 150px; }
+            .btn-buy { font-size: 0.9rem; padding: 0.5rem; }
+            .sidebar { min-height: auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- SIDEBAR -->
+        {% if session.nome %}
+        <div class="col-md-2 sidebar">
+            <h4 class="text-white ps-3">Menu</h4>
+            <a href="/?aba=loja" class="{% if aba=='loja' %}active{% endif %}">Loja</a>
+            <a href="/?aba=historico" class="{% if aba=='historico' %}active{% endif %}">Histórico</a>
+            {% if session.cargo=='admin' %}
+            <a href="/?aba=gerenciar" class="{% if aba=='gerenciar' %}active{% endif %}">Gerenciar</a>
+            {% endif %}
+            <a href="/logout" class="mt-3 btn btn-outline-danger w-100">Sair</a>
+        </div>
+        <div class="col-md-10">
+        {% else %}
+        <div class="col-md-12">
+        {% endif %}
+
+        <!-- FLASH MESSAGES -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for cat,msg in messages %}
+            <div class="alert alert-{{cat}}">{{msg}}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <!-- LOGIN / REGISTER -->
+        {% if not session.nome %}
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-4 card p-4 m-2 shadow-sm">
+                <h4>Login</h4>
+                <form action="/login" method="POST">
+                    <input name="u" placeholder="Email ou admin" class="form-control mb-2" required>
+                    <input name="s" type="password" placeholder="Senha" class="form-control mb-2" required>
+                    <button class="btn btn-primary w-100">Entrar</button>
+                </form>
+            </div>
+            <div class="col-md-4 card p-4 m-2 shadow-sm">
+                <h4>Cadastrar Cliente</h4>
+                <form action="/register" method="POST">
+                    <input name="nome" placeholder="Nome Completo" class="form-control mb-2" required>
+                    <input name="email" placeholder="E-mail" class="form-control mb-2" required>
+                    <input name="senha" type="password" placeholder="Senha" class="form-control mb-2" required>
+                    <button class="btn btn-success w-100">Criar Conta</button>
+                </form>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- USUÁRIO LOGADO -->
+        <h3 class="mb-4 text-secondary">Olá, {{session.nome}}! <span class="badge bg-info">{{session.cargo}}</span></h3>
+
+        {% if aba == 'loja' %}
+        <form method="GET" class="mb-4 d-flex gap-2">
+            <input name="q" class="form-control" placeholder="O que você procura hoje?">
+            <button class="btn btn-dark">Buscar</button>
+        </form>
+
+        <div class="row">
+            {% for p in produtos %}
+            <div class="col-md-3 mb-4">
+                <div class="card card-produto h-100 shadow-sm">
+                    <img src="{{p.imagem or 'https://via.placeholder.com/150'}}" class="card-img-top">
+                    <div class="card-body">
+                        <h5 class="produto-nome" title="{{ p.nome }}">
+                            {{ p.nome[:25] }}{% if p.nome|length > 25 %}... <a href="#" class="ver-mais">ver mais</a>{% endif %}
+                        </h5>
+                        {% if p.descricao %}
+                        <p class="produto-desc" title="{{ p.descricao }}">
+                            {{ p.descricao[:50] }}{% if p.descricao|length > 50 %}... <a href="#" class="ver-mais">ver mais</a>{% endif %}
+                        </p>
+                        {% endif %}
+                        <p class="text-success fw-bold">R$ {{p.preco}}</p>
+                        <small>Estoque: {{p.estoque}}</small>
+                        {% if session.cargo == 'cliente' %}
+                        <form action="/add_carrinho/{{p.id}}" method="POST" class="mt-2">
+                            <button class="btn-buy w-100">Adicionar ao Carrinho</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if session.cargo == 'cliente' and carrinho_qtd > 0 %}
+        <div class="fixed-bottom p-3 bg-white border-top shadow text-center">
+            <span class="me-3">🛒 Você tem <strong>{{carrinho_qtd}}</strong> itens no carrinho</span>
+            <a href="/finalizar" class="btn btn-success px-5">Finalizar Compra Agora</a>
+        </div>
+        {% endif %}
+
+        {% elif aba == 'historico' %}
+        <h4>Minhas Atividades / Vendas</h4>
+        <table class="table table-striped mt-3">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Produto</th>
+                    {% if session.cargo == 'admin' %}<
